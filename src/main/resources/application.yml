@@ -1,28 +1,70 @@
 spring:
+  main:
+    web-application-type: reactive
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: true
+          # lower-case-service-id: true
       routes:
-        - id: users-service
-          uri: http://localhost:8081
+        - id: user-service
+          uri: 'lb://user-service'
           predicates:
             - Path=/users/**
+          # filters:
+          #   - AuthenticationFilter
         - id: accounts-service
-          uri: http://localhost:8082
+          uri: 'lb://accounts-service'
           predicates:
             - Path=/accounts/**
-        - id: fraud-mgnt-service
-          uri: http://localhost:8083
+          # filters:
+          #   - AuthenticationFilter
+        - id: identity-service
+          uri: lb://identity-service
           predicates:
-             - Path=/books/**
-        - id: investigation-service
-          uri: http://localhost:8084
-          predicates:
-             - Path=/investigation/**
-        - id: notifications-service
-          uri: http://localhost:8085
-          predicates:
-             - Path=/notifications/**
+            - Path=/auth/**
         - id: txn-service
-          uri: http://localhost:8086
+          uri: 'lb://txn-service'
           predicates:
-             - Path=/transactions/**
+            - Path=/transactions/**
+          # filters:
+          #   - AuthenticationFilter
+        - id: notification-service
+          uri: 'lb://NOTIFICATION-SERVICE'
+          predicates:
+            - Path=/notifications/**
+        - id: fraud-mgnt-service
+          uri: 'lb://fraud-mgnt-service'
+          predicates:
+            - Path=/security/**
+          # filters:
+          #   - AuthenticationFilter
+        - id: investigation-service
+          uri: 'lb://INVESTIGATION-SERVICE'
+          predicates:
+            - Path=/investigation/**
+          # filters:
+          #   - AuthenticationFilter
+      default-filters:
+        - >-
+          DedupeResponseHeader=Access-Control-Allow-Origin
+          Access-Control-Allow-Credentials, RETAIN_UNIQUE
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: '*'
+            allowedHeaders: '*'
+            allowedMethods: '*'
+  application:
+    name: gateway-service
+server:
+  port: 9000
+eureka:
+  client:
+    service-url:
+      defaultZone: 'http://localhost:8761/eureka/'
+      # defaultZone: 'http://host.docker.internal:8761/eureka/'
+  instance:
+    prefer-ip-address: true
+    hostname: gateway-service
